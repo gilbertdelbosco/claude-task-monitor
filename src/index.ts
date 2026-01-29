@@ -427,7 +427,14 @@ function showToast(message, command) {
 function switchTaskList(taskListId) {
   localStorage.setItem('selectedTaskList', taskListId);
   location.hash = taskListId;
-  location.reload();
+  render();
+}
+
+function getSelectedListId() {
+  if (location.hash && location.hash.length > 1) return decodeURIComponent(location.hash.slice(1));
+  const stored = localStorage.getItem('selectedTaskList');
+  if (stored) return stored;
+  return TASK_DATA.length > 0 ? TASK_DATA[0].id : '';
 }
 
 function buildNextAvailableCommand(taskListId) {
@@ -487,7 +494,11 @@ function getBlockerStatus(task, allTasks) {
 
 function render() {
   if (!MONITOR_DATA || !TASK_DATA) return;
-  const taskLists = TASK_DATA;
+  const selectedId = getSelectedListId();
+  let taskLists = TASK_DATA.filter(list => list.id === selectedId);
+  if (taskLists.length === 0 && TASK_DATA.length > 0) {
+    taskLists = [TASK_DATA[0]];
+  }
   const totalTasks = taskLists.reduce((sum, list) => sum + list.tasks.length, 0);
   const inProgress = taskLists.reduce((sum, list) => sum + list.tasks.filter(t => t.status === 'in_progress').length, 0);
   const completed = taskLists.reduce((sum, list) => sum + list.tasks.filter(t => t.status === 'completed').length, 0);
@@ -505,7 +516,7 @@ function render() {
 
   const agentMap = {};
   const unownedInProgress = [];
-  for (const list of taskLists) {
+  for (const list of TASK_DATA) {
     for (const task of list.tasks) {
       if (task.status === 'in_progress') {
         if (task.owner) {
@@ -976,7 +987,7 @@ function migrateOldConfig(): void {
 
 function printHelp(): void {
   console.log(`
-Claude Task Monitor v2.0.0
+Claude Task Monitor v2.0.1
 
 Usage:
   claude-task-monitor              Start the monitor dashboard
@@ -1045,7 +1056,7 @@ function main() {
 
   console.log(`
 ╔═══════════════════════════════════════════════════════════╗
-║           Claude Task Monitor v2.0.0                      ║
+║           Claude Task Monitor v2.0.1                      ║
 ╚═══════════════════════════════════════════════════════════╝
 `);
 
