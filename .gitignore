@@ -1,0 +1,6 @@
+node_modules/
+dist/
+*.tgz
+task-monitor-data.json
+task-monitor.html
+monitor-config.json

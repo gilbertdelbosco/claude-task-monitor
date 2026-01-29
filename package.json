@@ -1,0 +1,45 @@
+{
+  "name": "claude-task-monitor",
+  "version": "2.0.0",
+  "description": "Real-time task monitor for Claude Code task lists",
+  "main": "dist/index.js",
+  "bin": {
+    "claude-task-monitor": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "claude",
+    "claude-code",
+    "task-monitor",
+    "tasks",
+    "cli"
+  ],
+  "author": "gilbertdelbosco",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gilbertdelbosco/claude-task-monitor"
+  },
+  "homepage": "https://github.com/gilbertdelbosco/claude-task-monitor#readme",
+  "license": "MIT",
+  "dependencies": {
+    "chokidar": "^3.5.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "dist",
+    "skill",
+    "README.md"
+  ]
+}
