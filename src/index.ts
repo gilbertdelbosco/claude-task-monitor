@@ -440,11 +440,12 @@ function getSelectedListId() {
 function buildNextAvailableCommand(taskListId) {
   const agentName = getNextAgentName();
   const projectDir = MONITOR_DATA.projectDir;
-  return 'cd ' + projectDir + ' && CLAUDE_CODE_TASK_LIST_ID=' + taskListId + ' AGENT_NAME=' + agentName + ' claude';
+  return 'cd ' + projectDir + ' && npm run agents:run -- --task-list ' + taskListId + ' --agent $(tmux display-message -p \'#S\')';
 }
 
 function buildSpecificTaskCommand(taskListId, taskId) {
-  return buildNextAvailableCommand(taskListId);
+  const projectDir = MONITOR_DATA.projectDir;
+  return 'cd ' + projectDir + ' && npm run agents:run -- --task-list ' + taskListId + ' --agent $(tmux display-message -p \'#S\') --mode task-' + taskId;
 }
 
 function launchSpecificTask(taskListId, taskId) {
@@ -452,7 +453,7 @@ function launchSpecificTask(taskListId, taskId) {
   const agentName = getNextAgentName();
   navigator.clipboard.writeText(command).then(() => {
     incrementAgentCount();
-    showToast('Copied! Paste in terminal, then type /work ' + taskId + ' to start ' + agentName, command);
+    showToast('Copied! Paste in terminal to start ' + agentName + ' on task ' + taskId, command);
     render();
   }).catch(() => {
     console.log('Command: ' + command);
@@ -987,7 +988,7 @@ function migrateOldConfig(): void {
 
 function printHelp(): void {
   console.log(`
-Claude Task Monitor v2.0.1
+Claude Task Monitor v2.1.0
 
 Usage:
   claude-task-monitor              Start the monitor dashboard
@@ -1056,7 +1057,7 @@ function main() {
 
   console.log(`
 ╔═══════════════════════════════════════════════════════════╗
-║           Claude Task Monitor v2.0.1                      ║
+║           Claude Task Monitor v2.1.0                      ║
 ╚═══════════════════════════════════════════════════════════╝
 `);
 

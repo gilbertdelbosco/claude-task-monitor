@@ -29,6 +29,22 @@ claude-task-monitor --help
 
 Open http://localhost:8080/ in your browser to see the dashboard.
 
+## Launch Command Integration
+
+The monitor copies launch commands that target the standardized app scripts:
+
+```bash
+npm run agents:run -- --task-list <task-list-id> --agent <agent-name>
+```
+
+For specific-task launch buttons, it appends:
+
+```bash
+--mode task-<id>
+```
+
+This aligns monitor output with the `agent-platform` command surface.
+
 ## Features
 
 - **Built-in HTTP server** - Dashboard served on port 8080, no separate server needed
