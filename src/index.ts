@@ -783,7 +783,7 @@ function getTaskLists(): ClaudeTaskList[] {
   const listDirs = fs.readdirSync(TASKS_DIR, { withFileTypes: true });
 
   for (const dir of listDirs) {
-    if (!dir.isDirectory() || dir.name === '.archive') continue;
+    if ((!dir.isDirectory() && !dir.isSymbolicLink()) || dir.name === '.archive') continue;
 
     const listPath = path.join(TASKS_DIR, dir.name);
     const tasks: ClaudeTask[] = [];
@@ -839,7 +839,7 @@ function getAllTaskListSummaries(): TaskListSummary[] {
   const listDirs = fs.readdirSync(TASKS_DIR, { withFileTypes: true });
 
   for (const dir of listDirs) {
-    if (!dir.isDirectory() || dir.name === '.archive') continue;
+    if ((!dir.isDirectory() && !dir.isSymbolicLink()) || dir.name === '.archive') continue;
 
     const listPath = path.join(TASKS_DIR, dir.name);
     const promptPath = path.join(listPath, 'prompt.md');
@@ -1103,7 +1103,7 @@ function migrateOldConfig(): void {
 
 function printHelp(): void {
   console.log(`
-Claude Task Monitor v2.2.1
+Claude Task Monitor v2.2.3
 
 Usage:
   claude-task-monitor              Start the monitor dashboard
@@ -1172,7 +1172,7 @@ function main() {
 
   console.log(`
 ╔═══════════════════════════════════════════════════════════╗
-║           Claude Task Monitor v2.2.1                      ║
+║           Claude Task Monitor v2.2.3                      ║
 ╚═══════════════════════════════════════════════════════════╝
 `);
 
