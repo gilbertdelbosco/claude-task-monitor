@@ -143,6 +143,14 @@ body {
   min-height: 100vh;
 }
 
+#launch {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: #0d1117;
+  padding-top: 0;
+}
+
 .control-bar {
   display: flex;
   align-items: center;
@@ -197,6 +205,8 @@ body {
 }
 
 .control-bar .launch-btn:hover { background: #2ea043; }
+.control-bar .launch-danger-btn { background: #da3633; color: #fff; border: none; padding: 6px 14px; border-radius: 4px; font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; white-space: nowrap; }
+.control-bar .launch-danger-btn:hover { background: #e55c59; }
 .control-bar .agent-name { color: #58a6ff; font-size: 13px; font-weight: 500; }
 .control-bar .reset-btn { color: #6e7681; background: none; border: none; font-size: 12px; cursor: pointer; font-family: inherit; padding: 4px 8px; }
 .control-bar .reset-btn:hover { color: #8b949e; }
@@ -267,7 +277,36 @@ body {
 
 .footer { color: #6e7681; font-size: 13px; margin-top: 20px; }
 
-.available-label { color: #58a6ff; font-size: 0.75rem; font-weight: 500; margin-left: 12px; }
+.available-label { color: #58a6ff; font-size: 0.75rem; font-weight: 500; margin-left: 12px; cursor: pointer; }
+.available-label:hover { text-decoration: underline; }
+
+.code-mode-select {
+  background: #0d1117;
+  color: #c9d1d9;
+  border: 1px solid #30363d;
+  padding: 4px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.code-mode-select:hover { border-color: #484f58; }
+.code-mode-select:focus { outline: none; border-color: #58a6ff; }
+
+.review-btn {
+  background: rgba(163, 113, 247, 0.15);
+  color: #a371f7;
+  border: 1px solid rgba(163, 113, 247, 0.3);
+  padding: 6px 14px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.review-btn:hover { background: rgba(163, 113, 247, 0.25); border-color: rgba(163, 113, 247, 0.5); }
+.codex-name { color: #a371f7; font-size: 13px; font-weight: 500; }
 
 .toast { position: fixed; bottom: 24px; right: 24px; background: #238636; color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 14px; opacity: 0; transform: translateY(10px); transition: opacity 0.2s, transform 0.2s; z-index: 1000; max-width: 400px; }
 .toast.show { opacity: 1; transform: translateY(0); }
@@ -417,6 +456,26 @@ function incrementAgentCount() {
 
 function resetAgentCount() { localStorage.setItem('agentCount', '0'); render(); }
 
+function getNextCodexName() {
+  const count = parseInt(localStorage.getItem('codexCount') || '0', 10);
+  return 'codex-' + (count < AGENT_NAMES.length ? AGENT_NAMES[count] : 'agent-' + (count + 1));
+}
+
+function incrementCodexCount() {
+  const count = parseInt(localStorage.getItem('codexCount') || '0', 10);
+  localStorage.setItem('codexCount', String(count + 1));
+}
+
+function resetCodexCount() { localStorage.setItem('codexCount', '0'); render(); }
+
+function getCodeMode() {
+  return localStorage.getItem('codeMode') || 'cda';
+}
+
+function setCodeMode(mode) {
+  localStorage.setItem('codeMode', mode);
+}
+
 function showToast(message, command) {
   const toast = document.getElementById('toast');
   toast.innerHTML = message + '<code>' + escapeHtml(command) + '</code>';
@@ -438,14 +497,12 @@ function getSelectedListId() {
 }
 
 function buildNextAvailableCommand(taskListId) {
-  const agentName = getNextAgentName();
   const projectDir = MONITOR_DATA.projectDir;
-  return 'cd ' + projectDir + ' && npm run agents:run -- --task-list ' + taskListId + ' --agent $(tmux display-message -p \'#S\')';
+  return "cd " + projectDir + " && ./scripts/cda-agent.sh --task-list " + taskListId + " --agent $(tmux display-message -p '#S') -- --model opus";
 }
 
 function buildSpecificTaskCommand(taskListId, taskId) {
-  const projectDir = MONITOR_DATA.projectDir;
-  return 'cd ' + projectDir + ' && npm run agents:run -- --task-list ' + taskListId + ' --agent $(tmux display-message -p \'#S\') --mode task-' + taskId;
+  return buildNextAvailableCommand(taskListId);
 }
 
 function launchSpecificTask(taskListId, taskId) {
@@ -453,7 +510,7 @@ function launchSpecificTask(taskListId, taskId) {
   const agentName = getNextAgentName();
   navigator.clipboard.writeText(command).then(() => {
     incrementAgentCount();
-    showToast('Copied! Paste in terminal to start ' + agentName + ' on task ' + taskId, command);
+    showToast('Copied! Paste in a tmux session, then type /work ' + taskId + ' to start', command);
     render();
   }).catch(() => {
     console.log('Command: ' + command);
@@ -470,7 +527,7 @@ function launchNextAvailable() {
   const agentName = getNextAgentName();
   navigator.clipboard.writeText(command).then(() => {
     incrementAgentCount();
-    showToast('Copied! Paste in terminal to start ' + agentName, command);
+    showToast('Copied! Paste in a tmux session to start agent', command);
     render();
   }).catch(() => {
     console.log('Command: ' + command);
@@ -478,6 +535,35 @@ function launchNextAvailable() {
     incrementAgentCount();
     render();
   });
+}
+
+function buildReviewCommand(taskListId, taskId) {
+  let cmd = "$codex-claude-review name=$(tmux display-message -p '#S') task-list=" + taskListId;
+  if (taskId) cmd += ' task-id=' + taskId;
+  return cmd;
+}
+
+function launchReview(taskListId, taskId) {
+  const command = buildReviewCommand(taskListId, taskId);
+  navigator.clipboard.writeText(command).then(() => {
+    incrementCodexCount();
+    const msg = taskId
+      ? 'Codex review copied! Paste in a tmux session to start review on task #' + taskId
+      : 'Codex review copied! Paste in a tmux session to start review';
+    showToast(msg, command);
+    render();
+  }).catch(() => {
+    console.log('Command: ' + command);
+    showToast('Copy failed. See console (F12)', command);
+    incrementCodexCount();
+    render();
+  });
+}
+
+function launchNextReview() {
+  const taskListSelect = document.getElementById('task-list-select');
+  const taskListId = taskListSelect ? taskListSelect.value : TASK_DATA[0].id;
+  launchReview(taskListId, null);
 }
 
 function truncate(str, maxLen) { return str.length <= maxLen ? str : str.slice(0, maxLen - 3) + '...'; }
@@ -541,7 +627,28 @@ function render() {
       const label = truncate(list.id, 28) + ' (' + list.taskCount + ')';
       taskListOptions += '<option value="' + escapeHtml(list.id) + '"' + selected + '>' + escapeHtml(label) + '</option>';
     }
-    launchDiv.innerHTML = '<div class="control-bar"><span class="title">Tasks</span><span class="divider"></span><select id="task-list-select" class="task-list-select" onchange="switchTaskList(this.value)">' + taskListOptions + '</select><button class="launch-btn" onclick="launchNextAvailable()">Launch</button><span class="agent-name">' + nextName + '</span><button class="reset-btn" onclick="resetAgentCount()">reset</button><span class="spacer"></span><div class="stats"><span><span class="value available">' + available + '</span> available</span><span><span class="value in-progress">' + inProgress + '</span> active</span><span><span class="value done">' + completed + '</span>/' + totalTasks + ' done</span></div><span class="divider"></span><button class="settings-btn" onclick="openSettings()">Settings</button></div>';
+    const codeMode = getCodeMode();
+    const codeDangerSel = codeMode === 'cda' ? ' selected' : '';
+    const codeRegSel = codeMode === 'claude' ? ' selected' : '';
+    const codexName = getNextCodexName();
+    launchDiv.innerHTML = '<div class="control-bar">' +
+      '<span class="title">Tasks</span><span class="divider"></span>' +
+      '<select id="task-list-select" class="task-list-select" onchange="switchTaskList(this.value)">' + taskListOptions + '</select>' +
+      '<select class="code-mode-select" onchange="setCodeMode(this.value)">' +
+        '<option value="cda"' + codeDangerSel + '>Danger</option>' +
+        '<option value="claude"' + codeRegSel + '>Reg</option>' +
+      '</select>' +
+      '<button class="launch-btn" onclick="launchNextAvailable()">Code</button>' +
+      '<span class="agent-name">' + nextName + '</span>' +
+      '<button class="reset-btn" onclick="resetAgentCount()">reset</button>' +
+      '<span class="divider"></span>' +
+      '<button class="review-btn" onclick="launchNextReview()">Review</button>' +
+      '<span class="codex-name">' + codexName + '</span>' +
+      '<button class="reset-btn" onclick="resetCodexCount()">reset</button>' +
+      '<span class="spacer"></span>' +
+      '<div class="stats"><span><span class="value available">' + available + '</span> avail</span><span><span class="value in-progress">' + inProgress + '</span> active</span><span><span class="value done">' + completed + '</span>/' + totalTasks + ' done</span></div>' +
+      '<span class="divider"></span><button class="settings-btn" onclick="openSettings()">Settings</button>' +
+    '</div>';
   } else {
     launchDiv.innerHTML = '<div class="control-bar"><span class="title">Tasks</span><span class="spacer"></span><button class="settings-btn" onclick="openSettings()">Settings</button></div>';
   }
@@ -570,7 +677,7 @@ function render() {
     agentsDiv.innerHTML = '';
     const projectDir = MONITOR_DATA.projectDir || '';
     const cdPrefix = projectDir ? 'cd ' + escapeHtml(projectDir) + ' && ' : '';
-    content.innerHTML = '<div class="empty">No active task lists found.<code>' + cdPrefix + 'CLAUDE_CODE_TASK_LIST_ID=my-project AGENT_NAME=alpha claude</code></div>';
+    content.innerHTML = '<div class="empty">No active task lists found.<code>' + cdPrefix + "./scripts/cda-agent.sh --task-list my-project --agent $(tmux display-message -p '#S') -- --model opus" + '</code></div>';
     document.getElementById('commands').innerHTML = '';
     return;
   }
@@ -601,10 +708,18 @@ function render() {
         suffixParts.push('<span class="blocked">waiting on ' + blockerIds + '</span>');
       }
       const canLaunch = isAvailable;
+      const isReviewTask = task.subject.startsWith('REVIEW:');
       const taskClass = isAvailable ? 'task pending available'
         : blockerStatus.isBlocked ? 'task pending blocked'
         : 'task ' + task.status;
-      const availableLabel = canLaunch ? '<span class="available-label">available</span>' : '';
+      let availableLabel = '';
+      if (canLaunch) {
+        if (isReviewTask) {
+          availableLabel = '<span class="available-label" onclick="event.stopPropagation(); launchReview(\\'' + taskList.id + '\\', \\'' + task.id + '\\')">available</span>';
+        } else {
+          availableLabel = '<span class="available-label" onclick="event.stopPropagation(); launchSpecificTask(\\'' + taskList.id + '\\', \\'' + task.id + '\\')">available</span>';
+        }
+      }
       html += '<div class="' + taskClass + '"><span class="icon ' + task.status + '">' + icon + '</span><span class="id">#' + task.id + '</span><span class="subject">' + escapeHtml(truncate(subject, 50)) + '</span><span class="suffix">' + suffixParts.join('') + availableLabel + '</span></div>';
     }
     html += '</div>';
@@ -615,11 +730,11 @@ function render() {
   const mostRecent = taskLists[0];
   const projectDir = MONITOR_DATA.projectDir || '';
   const cdPrefix = projectDir ? 'cd ' + escapeHtml(projectDir) + ' && ' : '';
-  let cmdHtml = '<h3>Quick Commands:</h3><div class="label"># Resume most recent task list:</div><code>' + cdPrefix + 'CLAUDE_CODE_TASK_LIST_ID=' + escapeHtml(mostRecent.id) + ' AGENT_NAME=alpha claude</code>';
+  let cmdHtml = '<h3>Quick Commands:</h3><div class="label"># Resume most recent task list:</div><code>' + cdPrefix + "./scripts/cda-agent.sh --task-list " + escapeHtml(mostRecent.id) + " --agent $(tmux display-message -p '#S') -- --model opus" + '</code>';
   if (taskLists.length > 1) {
     cmdHtml += '<div class="label"># Other task lists:</div>';
     for (const list of taskLists.slice(1, 4)) {
-      cmdHtml += '<code class="dim">' + cdPrefix + 'CLAUDE_CODE_TASK_LIST_ID=' + escapeHtml(list.id) + ' AGENT_NAME=alpha claude</code>';
+      cmdHtml += '<code class="dim">' + cdPrefix + "./scripts/cda-agent.sh --task-list " + escapeHtml(list.id) + " --agent $(tmux display-message -p '#S') -- --model opus" + '</code>';
     }
   }
   commands.innerHTML = cmdHtml;
@@ -988,7 +1103,7 @@ function migrateOldConfig(): void {
 
 function printHelp(): void {
   console.log(`
-Claude Task Monitor v2.1.0
+Claude Task Monitor v2.2.1
 
 Usage:
   claude-task-monitor              Start the monitor dashboard
@@ -1057,7 +1172,7 @@ function main() {
 
   console.log(`
 ╔═══════════════════════════════════════════════════════════╗
-║           Claude Task Monitor v2.1.0                      ║
+║           Claude Task Monitor v2.2.1                      ║
 ╚═══════════════════════════════════════════════════════════╝
 `);
 

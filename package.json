@@ -1,6 +1,6 @@
 {
   "name": "claude-task-monitor",
-  "version": "2.1.0",
+  "version": "2.2.1",
   "description": "Real-time task monitor for Claude Code task lists",
   "main": "dist/index.js",
   "bin": {
