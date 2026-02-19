@@ -186,6 +186,7 @@ body {
   font-family: inherit;
   cursor: pointer;
   min-width: 200px;
+  max-width: 350px;
 }
 
 .control-bar .task-list-select:hover { border-color: #484f58; }
@@ -232,10 +233,10 @@ body {
 }
 
 .agents-bar .label { font-size: 12px; font-weight: 600; color: #a371f7; text-transform: uppercase; letter-spacing: 0.5px; }
-.agents-bar .agent { display: inline-flex; align-items: center; gap: 8px; background: #21262d; padding: 4px 10px; border-radius: 4px; font-size: 13px; }
+.agents-bar .agent { display: inline-flex; align-items: center; gap: 8px; background: #21262d; padding: 4px 10px; border-radius: 4px; font-size: 13px; min-width: 0; max-width: 100%; }
 .agents-bar .agent-owner { color: #a371f7; font-weight: 500; }
 .agents-bar .agent-id { color: #6e7681; font-size: 12px; }
-.agents-bar .agent-task { color: #c9d1d9; }
+.agents-bar .agent-task { color: #c9d1d9; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: min(300px, 40vw); }
 .agents-bar .agent .spinner { color: #a371f7; }
 
 .empty { color: #6e7681; padding: 40px; text-align: center; }
@@ -243,7 +244,7 @@ body {
 
 .task-list { margin-bottom: 24px; }
 .task-list-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
-.task-list-header h2 { font-size: 15px; font-weight: 600; color: #f0f6fc; }
+.task-list-header h2 { font-size: 15px; font-weight: 600; color: #f0f6fc; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 400px; }
 .task-list-header .meta { font-size: 13px; color: #6e7681; }
 
 .status-summary { font-size: 13px; color: #6e7681; margin-left: 20px; margin-bottom: 8px; }
@@ -251,7 +252,10 @@ body {
 .status-summary .pending { color: #6e7681; }
 .status-summary .done { color: #3fb950; }
 
-.task { display: flex; align-items: center; gap: 10px; padding: 6px 0 6px 20px; font-size: 14px; }
+.task { display: flex; align-items: center; gap: 10px; padding: 10px 12px 10px 20px; font-size: 14px; border-bottom: 1px solid #21262d; transition: background-color 0.15s ease; }
+.task:last-child { border-bottom: none; }
+.task:first-child { border-top: 1px solid #21262d; }
+.task:hover { background-color: rgba(255,255,255,0.04); }
 .task .icon { width: 14px; text-align: center; }
 .task .icon.completed { color: #3fb950; }
 .task .icon.in_progress { color: #a371f7; }
@@ -260,8 +264,10 @@ body {
 .task.blocked .icon { color: #d29922; }
 .task.available .subject { color: #f0f6fc; }
 .task .id { color: #6e7681; font-size: 13px; min-width: 30px; }
-.task .subject { flex: 1; }
+.task .subject { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .task.completed .subject { color: #6e7681; }
+.task.in_progress { background-color: rgba(163, 113, 247, 0.04); }
+.task.in_progress:hover { background-color: rgba(163, 113, 247, 0.08); }
 .task.in_progress .subject { color: #f0f6fc; font-weight: 500; }
 .task .suffix { display: flex; gap: 12px; font-size: 13px; }
 .task .owner { color: #58a6ff; }
@@ -566,7 +572,7 @@ function launchNextReview() {
   launchReview(taskListId, null);
 }
 
-function truncate(str, maxLen) { return str.length <= maxLen ? str : str.slice(0, maxLen - 3) + '...'; }
+
 function escapeHtml(str) { return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
 function getBlockerStatus(task, allTasks) {
@@ -624,7 +630,7 @@ function render() {
     let taskListOptions = '';
     for (const list of MONITOR_DATA.availableLists) {
       const selected = list.id === currentList.id ? ' selected' : '';
-      const label = truncate(list.id, 28) + ' (' + list.taskCount + ')';
+      const label = list.id + ' (' + list.taskCount + ')';
       taskListOptions += '<option value="' + escapeHtml(list.id) + '"' + selected + '>' + escapeHtml(label) + '</option>';
     }
     const codeMode = getCodeMode();
@@ -659,12 +665,12 @@ function render() {
     for (const [owner, tasks] of Object.entries(agentMap)) {
       for (const task of tasks) {
         const subject = task.activeForm || task.subject;
-        agentsHtml += '<div class="agent"><span class="spinner"></span><span class="agent-owner">@' + escapeHtml(owner) + '</span><span class="agent-id">#' + task.id + '</span><span class="agent-task">' + escapeHtml(truncate(subject, 35)) + '</span></div>';
+        agentsHtml += '<div class="agent"><span class="spinner"></span><span class="agent-owner">@' + escapeHtml(owner) + '</span><span class="agent-id">#' + task.id + '</span><span class="agent-task" title="' + escapeHtml(subject) + '">' + escapeHtml(subject) + '</span></div>';
       }
     }
     for (const task of unownedInProgress) {
       const subject = task.activeForm || task.subject;
-      agentsHtml += '<div class="agent"><span class="spinner"></span><span class="agent-id">#' + task.id + '</span><span class="agent-task">' + escapeHtml(truncate(subject, 40)) + '</span></div>';
+      agentsHtml += '<div class="agent"><span class="spinner"></span><span class="agent-id">#' + task.id + '</span><span class="agent-task" title="' + escapeHtml(subject) + '">' + escapeHtml(subject) + '</span></div>';
     }
     agentsHtml += '</div>';
     agentsDiv.innerHTML = agentsHtml;
@@ -689,7 +695,7 @@ function render() {
     const completedCount = taskList.tasks.filter(t => t.status === 'completed').length;
     const lastModified = new Date(taskList.lastModified).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
 
-    html += '<div class="task-list"><div class="task-list-header"><h2>' + escapeHtml(truncate(taskList.id, 24)) + '</h2><span class="meta">(' + taskList.tasks.length + ' tasks, updated ' + lastModified + ')</span></div>';
+    html += '<div class="task-list"><div class="task-list-header"><h2 title="' + escapeHtml(taskList.id) + '">' + escapeHtml(taskList.id) + '</h2><span class="meta">(' + taskList.tasks.length + ' tasks, updated ' + lastModified + ')</span></div>';
     const statusParts = [];
     if (inProgressCount > 0) statusParts.push('<span class="active">' + inProgressCount + ' active</span>');
     if (pendingCount > 0) statusParts.push('<span class="pending">' + pendingCount + ' pending</span>');
@@ -720,7 +726,7 @@ function render() {
           availableLabel = '<span class="available-label" onclick="event.stopPropagation(); launchSpecificTask(\\'' + taskList.id + '\\', \\'' + task.id + '\\')">available</span>';
         }
       }
-      html += '<div class="' + taskClass + '"><span class="icon ' + task.status + '">' + icon + '</span><span class="id">#' + task.id + '</span><span class="subject">' + escapeHtml(truncate(subject, 50)) + '</span><span class="suffix">' + suffixParts.join('') + availableLabel + '</span></div>';
+      html += '<div class="' + taskClass + '"><span class="icon ' + task.status + '">' + icon + '</span><span class="id">#' + task.id + '</span><span class="subject" title="' + escapeHtml(subject) + '">' + escapeHtml(subject) + '</span><span class="suffix">' + suffixParts.join('') + availableLabel + '</span></div>';
     }
     html += '</div>';
   }
