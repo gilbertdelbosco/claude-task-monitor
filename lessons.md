@@ -24,6 +24,12 @@
 9. Commit and push
 10. `npm publish` — **must be run by the human in an interactive terminal.** The publish flow uses web-based auth ("Press ENTER to open in the browser...") which requires an interactive shell. Claude's Bash tool is non-interactive and cannot handle this. Do NOT attempt `npm publish` from Claude — tell the user to run it themselves.
 
+## Critical Architecture Note
+
+The `render()` function and all client-side JavaScript in `src/index.ts` live inside a **template literal string**. TypeScript compiles the outer server-side code but does NOT process the contents of string literals. Therefore:
+- **Never use TypeScript syntax inside client-side code** (no type annotations, no generics like `Set<string>`, no `as Type` casts)
+- Use plain JavaScript syntax: `new Set()` not `new Set<string>()`
+
 ## Past Mistakes
 
 ### v2.3.0 — CSS truncation + row readability (2026-02-19)
