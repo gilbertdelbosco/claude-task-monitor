@@ -609,9 +609,14 @@ function render() {
 
   const agentMap = {};
   const unownedInProgress = [];
+  const seenAgentTasks = new Set();
   for (const list of TASK_DATA) {
     for (const task of list.tasks) {
       if (task.status === 'in_progress') {
+        const subject = task.activeForm || task.subject || '';
+        const dedupeKey = (task.owner || '') + ':' + task.id + ':' + subject;
+        if (seenAgentTasks.has(dedupeKey)) continue;
+        seenAgentTasks.add(dedupeKey);
         if (task.owner) {
           if (!agentMap[task.owner]) agentMap[task.owner] = [];
           agentMap[task.owner].push({ ...task, listId: list.id });
@@ -1109,7 +1114,7 @@ function migrateOldConfig(): void {
 
 function printHelp(): void {
   console.log(`
-Claude Task Monitor v2.2.3
+Claude Task Monitor v2.3.1
 
 Usage:
   claude-task-monitor              Start the monitor dashboard
@@ -1178,7 +1183,7 @@ function main() {
 
   console.log(`
 ╔═══════════════════════════════════════════════════════════╗
-║           Claude Task Monitor v2.2.3                      ║
+║           Claude Task Monitor v2.3.1                      ║
 ╚═══════════════════════════════════════════════════════════╝
 `);
 
