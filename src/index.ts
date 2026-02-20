@@ -22,6 +22,7 @@ interface ClaudeTask {
   blocks: string[];
   blockedBy: string[];
   owner?: string;
+  metadata?: Record<string, unknown>;
 }
 
 interface ClaudeTaskList {
@@ -252,10 +253,13 @@ body {
 .status-summary .pending { color: #6e7681; }
 .status-summary .done { color: #3fb950; }
 
-.task { display: flex; align-items: center; gap: 10px; padding: 10px 12px 10px 20px; font-size: 14px; border-bottom: 1px solid #21262d; transition: background-color 0.15s ease; }
-.task:last-child { border-bottom: none; }
-.task:first-child { border-top: 1px solid #21262d; }
+.task-item { border-bottom: 1px solid #21262d; }
+.task-item:last-child { border-bottom: none; }
+.task-item:first-child { border-top: 1px solid #21262d; }
+.task { display: flex; align-items: center; gap: 10px; padding: 10px 12px 10px 16px; font-size: 14px; transition: background-color 0.15s ease; cursor: pointer; user-select: none; }
 .task:hover { background-color: rgba(255,255,255,0.04); }
+.task .chevron { width: 16px; text-align: center; font-size: 11px; color: #484f58; transition: transform 0.2s ease, color 0.2s ease; flex-shrink: 0; }
+.task .chevron.expanded { transform: rotate(90deg); color: #8b949e; }
 .task .icon { width: 14px; text-align: center; }
 .task .icon.completed { color: #3fb950; }
 .task .icon.in_progress { color: #a371f7; }
@@ -274,6 +278,47 @@ body {
 .task.in_progress .owner { color: #a371f7; }
 .task.completed .owner { color: #3fb950; }
 .task .blocked { color: #d29922; }
+
+.task-detail { background: #161b22; padding: 14px 20px 18px 58px; border-top: 1px solid rgba(48,54,61,0.6); }
+.detail-section { margin-bottom: 16px; }
+.detail-section:last-child { margin-bottom: 0; }
+.detail-label { font-size: 11px; font-weight: 600; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid #21262d; }
+.detail-desc { font-size: 13px; line-height: 1.65; color: #c9d1d9; }
+.detail-desc p { margin-bottom: 6px; }
+.detail-desc p:last-child { margin-bottom: 0; }
+.detail-desc ul, .detail-desc ol { margin: 4px 0 8px 20px; }
+.detail-desc li { margin-bottom: 2px; }
+.detail-desc strong { color: #f0f6fc; font-weight: 600; }
+.detail-desc code { background: #0d1117; padding: 2px 6px; border-radius: 3px; font-size: 12px; color: #e6edf3; }
+.detail-desc pre { background: #0d1117; padding: 10px 14px; border-radius: 4px; overflow-x: auto; margin: 8px 0; font-size: 12px; line-height: 1.5; }
+.detail-desc pre code { background: none; padding: 0; }
+.detail-desc h1, .detail-desc h2, .detail-desc h3, .detail-desc h4 { color: #f0f6fc; font-weight: 600; margin: 12px 0 6px 0; }
+.detail-desc h1 { font-size: 16px; }
+.detail-desc h2 { font-size: 15px; }
+.detail-desc h3 { font-size: 14px; }
+.detail-desc h4 { font-size: 13px; }
+.detail-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 6px 20px; font-size: 12px; }
+.detail-grid .lbl { color: #6e7681; }
+.detail-grid .val { color: #c9d1d9; }
+.detail-grid .val.risk-high { color: #f85149; }
+.detail-grid .val.risk-medium { color: #d29922; }
+.detail-grid .val.risk-low { color: #3fb950; }
+.detail-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.detail-tag { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: rgba(88,166,255,0.1); color: #58a6ff; border: 1px solid rgba(88,166,255,0.2); }
+.detail-report { font-size: 13px; line-height: 1.5; color: #c9d1d9; }
+.detail-report .agent-line { color: #58a6ff; margin-bottom: 8px; font-size: 12px; }
+.detail-report .summary { margin-bottom: 12px; }
+.detail-report .sub-label { font-size: 11px; color: #6e7681; margin-bottom: 2px; margin-top: 8px; }
+.detail-files { list-style: none; padding: 0; margin: 4px 0 0 0; }
+.detail-files li { font-size: 12px; color: #8b949e; padding: 1px 0; }
+.detail-files li::before { content: "\\25B8"; color: #3fb950; margin-right: 8px; font-size: 10px; }
+.detail-decisions { list-style: none; padding: 0; margin: 4px 0 0 0; }
+.detail-decisions li { font-size: 12px; color: #c9d1d9; padding: 2px 0 2px 16px; position: relative; }
+.detail-decisions li::before { content: "\\2192"; position: absolute; left: 0; color: #6e7681; }
+.detail-verify { font-size: 12px; color: #8b949e; margin-top: 8px; }
+.detail-verify .pass { color: #3fb950; font-weight: 500; }
+.detail-verify .fail { color: #f85149; font-weight: 500; }
+.detail-deps { font-size: 12px; color: #8b949e; }
 
 .commands { border-top: 1px solid #30363d; padding-top: 20px; margin-top: 20px; }
 .commands h3 { font-size: 14px; font-weight: 600; margin-bottom: 12px; color: #f0f6fc; }
@@ -350,6 +395,7 @@ let AGENT_NAMES = ['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta', 'eta', 
 
 let pollInterval = 2000;
 let pollTimer = null;
+var expandedTasks = new Set();
 
 function restartPolling(interval) {
   pollInterval = interval;
@@ -586,6 +632,118 @@ function getBlockerStatus(task, allTasks) {
   return { isBlocked: !allDone, blockers, ready: allDone && blockers.length > 0 };
 }
 
+function toggleTask(taskId) {
+  if (expandedTasks.has(taskId)) expandedTasks.delete(taskId);
+  else expandedTasks.add(taskId);
+  render();
+}
+
+function inlineFormat(text) {
+  text = escapeHtml(text);
+  text = text.replace(/\\*\\*(.+?)\\*\\*/g, '<strong>$1</strong>');
+  text = text.replace(/__(.+?)__/g, '<strong>$1</strong>');
+  text = text.replace(/\`([^\`]+)\`/g, '<code>$1</code>');
+  return text;
+}
+
+function renderMarkdown(text) {
+  if (!text) return '';
+  var lines = text.split('\\n');
+  var html = '';
+  var inUl = false, inOl = false, inCode = false, codeBuf = '';
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i];
+    if (line.trim().indexOf('\`\`\`') === 0) {
+      if (inCode) { html += '<pre><code>' + escapeHtml(codeBuf.trimEnd()) + '</code></pre>'; codeBuf = ''; inCode = false; }
+      else { if (inUl) { html += '</ul>'; inUl = false; } if (inOl) { html += '</ol>'; inOl = false; } inCode = true; }
+      continue;
+    }
+    if (inCode) { codeBuf += line + '\\n'; continue; }
+    var isBul = /^\\s*[-*]\\s+/.test(line);
+    var isNum = /^\\s*\\d+\\.\\s+/.test(line);
+    if (inUl && !isBul) { html += '</ul>'; inUl = false; }
+    if (inOl && !isNum) { html += '</ol>'; inOl = false; }
+    if (line.trim() === '') continue;
+    if (/^####\\s+/.test(line)) html += '<h4>' + inlineFormat(line.replace(/^####\\s+/, '')) + '</h4>';
+    else if (/^###\\s+/.test(line)) html += '<h3>' + inlineFormat(line.replace(/^###\\s+/, '')) + '</h3>';
+    else if (/^##\\s+/.test(line)) html += '<h2>' + inlineFormat(line.replace(/^##\\s+/, '')) + '</h2>';
+    else if (/^#\\s+/.test(line)) html += '<h1>' + inlineFormat(line.replace(/^#\\s+/, '')) + '</h1>';
+    else if (isBul) { if (!inUl) { html += '<ul>'; inUl = true; } html += '<li>' + inlineFormat(line.replace(/^\\s*[-*]\\s+/, '')) + '</li>'; }
+    else if (isNum) { if (!inOl) { html += '<ol>'; inOl = true; } html += '<li>' + inlineFormat(line.replace(/^\\s*\\d+\\.\\s+/, '')) + '</li>'; }
+    else html += '<p>' + inlineFormat(line) + '</p>';
+  }
+  if (inUl) html += '</ul>';
+  if (inOl) html += '</ol>';
+  if (inCode) html += '<pre><code>' + escapeHtml(codeBuf.trimEnd()) + '</code></pre>';
+  return html;
+}
+
+function buildDetailHtml(task) {
+  var h = '';
+  if (task.description) {
+    h += '<div class="detail-section"><div class="detail-label">Description</div><div class="detail-desc">' + renderMarkdown(task.description) + '</div></div>';
+  }
+  var m = task.metadata;
+  if (m) {
+    var fields = [['wave','Wave'],['phase','Phase'],['epic','Epic'],['loe','LOE'],['complexity','Complexity'],['riskLevel','Risk'],['swarmLane','Lane'],['planSection','Plan Section'],['feature','Feature'],['bundleTaskNumber','Bundle #']];
+    var hasField = false;
+    var gridHtml = '';
+    for (var fi = 0; fi < fields.length; fi++) {
+      var val = m[fields[fi][0]];
+      if (val !== undefined && val !== null) {
+        hasField = true;
+        var cls = 'val';
+        if (fields[fi][0] === 'riskLevel') cls += ' risk-' + val;
+        gridHtml += '<div><span class="lbl">' + fields[fi][1] + ': </span><span class="' + cls + '">' + escapeHtml(String(val)) + '</span></div>';
+      }
+    }
+    if (hasField) {
+      h += '<div class="detail-section"><div class="detail-label">Metadata</div><div class="detail-grid">' + gridHtml + '</div>';
+      if (m.skillsHint && m.skillsHint.length > 0) {
+        h += '<div class="detail-tags">';
+        for (var si = 0; si < m.skillsHint.length; si++) h += '<span class="detail-tag">' + escapeHtml(m.skillsHint[si]) + '</span>';
+        h += '</div>';
+      }
+      h += '</div>';
+    }
+  }
+  var cr = m && m.completionReport;
+  if (cr) {
+    h += '<div class="detail-section"><div class="detail-label">Completion Report</div><div class="detail-report">';
+    h += '<div class="agent-line">';
+    if (cr.agent) h += '@' + escapeHtml(cr.agent);
+    if (cr.completedAt) h += ' \\u00b7 ' + new Date(cr.completedAt).toLocaleString();
+    h += '</div>';
+    if (cr.summary) h += '<div class="summary">' + escapeHtml(cr.summary) + '</div>';
+    if (cr.filesChanged && cr.filesChanged.length > 0) {
+      h += '<div class="sub-label">Files changed</div><ul class="detail-files">';
+      for (var fc = 0; fc < cr.filesChanged.length; fc++) h += '<li>' + escapeHtml(cr.filesChanged[fc]) + '</li>';
+      h += '</ul>';
+    }
+    if (cr.decisions && cr.decisions.length > 0) {
+      h += '<div class="sub-label">Decisions</div><ul class="detail-decisions">';
+      for (var di = 0; di < cr.decisions.length; di++) h += '<li>' + escapeHtml(cr.decisions[di]) + '</li>';
+      h += '</ul>';
+    }
+    if (cr.verification) {
+      var v = cr.verification;
+      h += '<div class="detail-verify">Build: <span class="' + (v.buildPasses ? 'pass' : 'fail') + '">' + (v.buildPasses ? 'PASS' : 'FAIL') + '</span>';
+      if (v.browserTested !== undefined) h += ' \\u00b7 Browser: <span class="' + (v.browserTested ? 'pass' : 'fail') + '">' + (v.browserTested ? 'Yes' : 'No') + '</span>';
+      if (v.notes) h += '<div style="margin-top:4px;color:#8b949e;">' + escapeHtml(v.notes) + '</div>';
+      h += '</div>';
+    }
+    h += '</div></div>';
+  }
+  if ((task.blocks && task.blocks.length > 0) || (task.blockedBy && task.blockedBy.length > 0)) {
+    h += '<div class="detail-section"><div class="detail-label">Dependencies</div><div class="detail-deps">';
+    if (task.blocks && task.blocks.length > 0) h += 'Blocks: ' + task.blocks.map(function(id) { return '#' + id; }).join(', ');
+    if (task.blocks && task.blocks.length > 0 && task.blockedBy && task.blockedBy.length > 0) h += ' \\u00b7 ';
+    if (task.blockedBy && task.blockedBy.length > 0) h += 'Blocked by: ' + task.blockedBy.map(function(id) { return '#' + id; }).join(', ');
+    h += '</div></div>';
+  }
+  return h;
+}
+
 function render() {
   if (!MONITOR_DATA || !TASK_DATA) return;
   const selectedId = getSelectedListId();
@@ -732,7 +890,13 @@ function render() {
           availableLabel = '<span class="available-label" onclick="event.stopPropagation(); launchSpecificTask(\\'' + taskList.id + '\\', \\'' + task.id + '\\')">available</span>';
         }
       }
-      html += '<div class="' + taskClass + '"><span class="icon ' + task.status + '">' + icon + '</span><span class="id">#' + task.id + '</span><span class="subject" title="' + escapeHtml(subject) + '">' + escapeHtml(subject) + '</span><span class="suffix">' + suffixParts.join('') + availableLabel + '</span></div>';
+      const isExp = expandedTasks.has(task.id);
+      const chevCls = 'chevron' + (isExp ? ' expanded' : '');
+      html += '<div class="task-item"><div class="' + taskClass + '" onclick="toggleTask(\\'' + task.id + '\\')">';
+      html += '<span class="' + chevCls + '">\\u25B8</span>';
+      html += '<span class="icon ' + task.status + '">' + icon + '</span><span class="id">#' + task.id + '</span><span class="subject" title="' + escapeHtml(subject) + '">' + escapeHtml(subject) + '</span><span class="suffix">' + suffixParts.join('') + availableLabel + '</span></div>';
+      if (isExp) html += '<div class="task-detail">' + buildDetailHtml(task) + '</div>';
+      html += '</div>';
     }
     html += '</div>';
   }
@@ -1115,7 +1279,7 @@ function migrateOldConfig(): void {
 
 function printHelp(): void {
   console.log(`
-Claude Task Monitor v2.3.2
+Claude Task Monitor v2.4.0
 
 Usage:
   claude-task-monitor              Start the monitor dashboard
@@ -1184,7 +1348,7 @@ function main() {
 
   console.log(`
 ╔═══════════════════════════════════════════════════════════╗
-║           Claude Task Monitor v2.3.2                      ║
+║           Claude Task Monitor v2.4.0                      ║
 ╚═══════════════════════════════════════════════════════════╝
 `);
 
