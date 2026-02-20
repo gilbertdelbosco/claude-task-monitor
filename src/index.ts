@@ -504,7 +504,7 @@ function getSelectedListId() {
 
 function buildNextAvailableCommand(taskListId) {
   const projectDir = MONITOR_DATA.projectDir;
-  return "cd " + projectDir + " && ./scripts/cda-agent.sh --task-list " + taskListId + " --agent $(tmux display-message -p '#S') -- --model opus";
+  return "cd " + projectDir + " && ./scripts/cda-agent.sh --task-list " + taskListId + " --agent $(tmux display-message -p '#S')";
 }
 
 function buildSpecificTaskCommand(taskListId, taskId) {
@@ -546,6 +546,7 @@ function launchNextAvailable() {
 function buildReviewCommand(taskListId, taskId) {
   let cmd = "$codex-claude-review name=$(tmux display-message -p '#S') task-list=" + taskListId;
   if (taskId) cmd += ' task-id=' + taskId;
+  cmd += '\\n\\n# If using native codex-app: use a unique agent name and rename your thread to match';
   return cmd;
 }
 
@@ -554,8 +555,8 @@ function launchReview(taskListId, taskId) {
   navigator.clipboard.writeText(command).then(() => {
     incrementCodexCount();
     const msg = taskId
-      ? 'Codex review copied! Paste in a tmux session to start review on task #' + taskId
-      : 'Codex review copied! Paste in a tmux session to start review';
+      ? 'Codex review copied! Paste in a tmux session to start review on task #' + taskId + '. If using codex-app, use a unique agent name and rename your thread to match.'
+      : 'Codex review copied! Paste in a tmux session to start review. If using codex-app, use a unique agent name and rename your thread to match.';
     showToast(msg, command);
     render();
   }).catch(() => {
@@ -688,7 +689,7 @@ function render() {
     agentsDiv.innerHTML = '';
     const projectDir = MONITOR_DATA.projectDir || '';
     const cdPrefix = projectDir ? 'cd ' + escapeHtml(projectDir) + ' && ' : '';
-    content.innerHTML = '<div class="empty">No active task lists found.<code>' + cdPrefix + "./scripts/cda-agent.sh --task-list my-project --agent $(tmux display-message -p '#S') -- --model opus" + '</code></div>';
+    content.innerHTML = '<div class="empty">No active task lists found.<code>' + cdPrefix + "./scripts/cda-agent.sh --task-list my-project --agent $(tmux display-message -p '#S')" + '</code></div>';
     document.getElementById('commands').innerHTML = '';
     return;
   }
@@ -741,11 +742,11 @@ function render() {
   const mostRecent = taskLists[0];
   const projectDir = MONITOR_DATA.projectDir || '';
   const cdPrefix = projectDir ? 'cd ' + escapeHtml(projectDir) + ' && ' : '';
-  let cmdHtml = '<h3>Quick Commands:</h3><div class="label"># Resume most recent task list:</div><code>' + cdPrefix + "./scripts/cda-agent.sh --task-list " + escapeHtml(mostRecent.id) + " --agent $(tmux display-message -p '#S') -- --model opus" + '</code>';
+  let cmdHtml = '<h3>Quick Commands:</h3><div class="label"># Resume most recent task list:</div><code>' + cdPrefix + "./scripts/cda-agent.sh --task-list " + escapeHtml(mostRecent.id) + " --agent $(tmux display-message -p '#S')" + '</code>';
   if (taskLists.length > 1) {
     cmdHtml += '<div class="label"># Other task lists:</div>';
     for (const list of taskLists.slice(1, 4)) {
-      cmdHtml += '<code class="dim">' + cdPrefix + "./scripts/cda-agent.sh --task-list " + escapeHtml(list.id) + " --agent $(tmux display-message -p '#S') -- --model opus" + '</code>';
+      cmdHtml += '<code class="dim">' + cdPrefix + "./scripts/cda-agent.sh --task-list " + escapeHtml(list.id) + " --agent $(tmux display-message -p '#S')" + '</code>';
     }
   }
   commands.innerHTML = cmdHtml;
@@ -1114,7 +1115,7 @@ function migrateOldConfig(): void {
 
 function printHelp(): void {
   console.log(`
-Claude Task Monitor v2.3.1
+Claude Task Monitor v2.3.2
 
 Usage:
   claude-task-monitor              Start the monitor dashboard
@@ -1183,7 +1184,7 @@ function main() {
 
   console.log(`
 ╔═══════════════════════════════════════════════════════════╗
-║           Claude Task Monitor v2.3.1                      ║
+║           Claude Task Monitor v2.3.2                      ║
 ╚═══════════════════════════════════════════════════════════╝
 `);
 
