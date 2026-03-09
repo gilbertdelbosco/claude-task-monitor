@@ -137,14 +137,14 @@ const taskDataCache = new Map<string, { tasks: ClaudeTask[], lastModified: Date 
 const CSS = `* { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   background: #0d1117;
   color: #c9d1d9;
   padding: 24px;
   min-height: 100vh;
 }
 
-#launch {
+#header {
   position: sticky;
   top: 0;
   z-index: 100;
@@ -163,18 +163,32 @@ body {
   margin-bottom: 20px;
 }
 
-.control-bar .title {
+.control-bar .list-name {
   font-size: 14px;
   font-weight: 600;
-  color: #8b949e;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  color: #f0f6fc;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 300px;
 }
-
+.control-bar .copy-id-btn {
+  background: none;
+  border: 1px solid #30363d;
+  color: #6e7681;
+  padding: 3px 7px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+  line-height: 1;
+}
+.control-bar .copy-id-btn:hover { color: #c9d1d9; border-color: #484f58; }
 .control-bar .divider {
   width: 1px;
   height: 24px;
   background: #30363d;
+  flex-shrink: 0;
 }
 
 .control-bar .task-list-select {
@@ -193,25 +207,26 @@ body {
 .control-bar .task-list-select:hover { border-color: #484f58; }
 .control-bar .task-list-select:focus { outline: none; border-color: #58a6ff; }
 
-.control-bar .launch-btn {
-  background: #238636;
-  color: #fff;
-  border: none;
-  padding: 6px 14px;
-  border-radius: 4px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  font-family: inherit;
-  white-space: nowrap;
+.header-agents {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
-
-.control-bar .launch-btn:hover { background: #2ea043; }
-.control-bar .launch-danger-btn { background: #da3633; color: #fff; border: none; padding: 6px 14px; border-radius: 4px; font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; white-space: nowrap; }
-.control-bar .launch-danger-btn:hover { background: #e55c59; }
-.control-bar .agent-name { color: #58a6ff; font-size: 13px; font-weight: 500; }
-.control-bar .reset-btn { color: #6e7681; background: none; border: none; font-size: 12px; cursor: pointer; font-family: inherit; padding: 4px 8px; }
-.control-bar .reset-btn:hover { color: #8b949e; }
+.header-agents .agent-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(163, 113, 247, 0.1);
+  border: 1px solid rgba(163, 113, 247, 0.15);
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+.header-agents .agent-chip .spinner { color: #a371f7; }
+.header-agents .agent-chip .agent-owner { color: #a371f7; font-weight: 500; }
+.header-agents .agent-chip .agent-id { color: #6e7681; }
+.header-agents .agent-chip .agent-task { color: #c9d1d9; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: min(180px, 20vw); }
 .control-bar .settings-btn { color: #8b949e; background: none; border: 1px solid #30363d; font-size: 12px; cursor: pointer; font-family: inherit; padding: 4px 10px; border-radius: 4px; }
 .control-bar .settings-btn:hover { color: #c9d1d9; border-color: #484f58; }
 .control-bar .spacer { flex: 1; }
@@ -221,24 +236,6 @@ body {
 .control-bar .stats .in-progress { color: #a371f7; }
 .control-bar .stats .done { color: #3fb950; }
 
-.agents-bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 16px;
-  background: rgba(163, 113, 247, 0.08);
-  border: 1px solid rgba(163, 113, 247, 0.2);
-  border-radius: 6px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-}
-
-.agents-bar .label { font-size: 12px; font-weight: 600; color: #a371f7; text-transform: uppercase; letter-spacing: 0.5px; }
-.agents-bar .agent { display: inline-flex; align-items: center; gap: 8px; background: #21262d; padding: 4px 10px; border-radius: 4px; font-size: 13px; min-width: 0; max-width: 100%; }
-.agents-bar .agent-owner { color: #a371f7; font-weight: 500; }
-.agents-bar .agent-id { color: #6e7681; font-size: 12px; }
-.agents-bar .agent-task { color: #c9d1d9; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: min(300px, 40vw); }
-.agents-bar .agent .spinner { color: #a371f7; }
 
 .empty { color: #6e7681; padding: 40px; text-align: center; }
 .empty code { display: block; margin-top: 16px; color: #58a6ff; background: #161b22; padding: 12px 16px; border-radius: 6px; font-size: 14px; }
@@ -248,10 +245,6 @@ body {
 .task-list-header h2 { font-size: 15px; font-weight: 600; color: #f0f6fc; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 400px; }
 .task-list-header .meta { font-size: 13px; color: #6e7681; }
 
-.status-summary { font-size: 13px; color: #6e7681; margin-left: 20px; margin-bottom: 8px; }
-.status-summary .active { color: #a371f7; }
-.status-summary .pending { color: #6e7681; }
-.status-summary .done { color: #3fb950; }
 
 .task-item { border-bottom: 1px solid #21262d; }
 .task-item:last-child { border-bottom: none; }
@@ -328,36 +321,15 @@ body {
 
 .footer { color: #6e7681; font-size: 13px; margin-top: 20px; }
 
-.available-label { color: #58a6ff; font-size: 0.75rem; font-weight: 500; margin-left: 12px; cursor: pointer; }
-.available-label:hover { text-decoration: underline; }
+.copy-btn { font-size: 0.7rem; font-weight: 500; padding: 2px 8px; border-radius: 3px; cursor: pointer; margin-left: 4px; transition: background-color 0.15s ease, color 0.15s ease; border: 1px solid transparent; }
+.copy-claude { color: #58a6ff; background: rgba(88, 166, 255, 0.08); border-color: rgba(88, 166, 255, 0.2); }
+.copy-claude:hover { background: rgba(88, 166, 255, 0.18); border-color: rgba(88, 166, 255, 0.4); }
+.copy-codex { color: #a371f7; background: rgba(163, 113, 247, 0.08); border-color: rgba(163, 113, 247, 0.2); }
+.copy-codex:hover { background: rgba(163, 113, 247, 0.18); border-color: rgba(163, 113, 247, 0.4); }
+.claimed-label { font-size: 0.75rem; color: #fff; font-weight: 600; margin-left: 8px; cursor: pointer; padding: 3px 10px; border-radius: 3px; background: #238636; border: 1px solid #2ea043; }
+.claimed-label:hover { background: #2ea043; }
+.task.claimed { background-color: rgba(63, 185, 80, 0.06); }
 
-.code-mode-select {
-  background: #0d1117;
-  color: #c9d1d9;
-  border: 1px solid #30363d;
-  padding: 4px 6px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-family: inherit;
-  cursor: pointer;
-}
-.code-mode-select:hover { border-color: #484f58; }
-.code-mode-select:focus { outline: none; border-color: #58a6ff; }
-
-.review-btn {
-  background: rgba(163, 113, 247, 0.15);
-  color: #a371f7;
-  border: 1px solid rgba(163, 113, 247, 0.3);
-  padding: 6px 14px;
-  border-radius: 4px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  font-family: inherit;
-  white-space: nowrap;
-}
-.review-btn:hover { background: rgba(163, 113, 247, 0.25); border-color: rgba(163, 113, 247, 0.5); }
-.codex-name { color: #a371f7; font-size: 13px; font-weight: 500; }
 
 .toast { position: fixed; bottom: 24px; right: 24px; background: #238636; color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 14px; opacity: 0; transform: translateY(10px); transition: opacity 0.2s, transform 0.2s; z-index: 1000; max-width: 400px; }
 .toast.show { opacity: 1; transform: translateY(0); }
@@ -396,6 +368,7 @@ let AGENT_NAMES = ['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta', 'eta', 
 let pollInterval = 2000;
 let pollTimer = null;
 var expandedTasks = new Set();
+var claimedTasks = new Map();
 
 function restartPolling(interval) {
   pollInterval = interval;
@@ -528,6 +501,71 @@ function setCodeMode(mode) {
   localStorage.setItem('codeMode', mode);
 }
 
+function copyTaskListId() {
+  if (!TASK_DATA || TASK_DATA.length === 0) return;
+  var listId = TASK_DATA[0].id;
+  navigator.clipboard.writeText(listId).then(function() {
+    showToast('Copied!', listId);
+  }).catch(function() {
+    showToast('Copy failed', listId);
+  });
+}
+
+function getTmuxSessionNameRef() {
+  return "$(tmux display-message -p '#S')";
+}
+
+function getPrefixedAgentName(type) {
+  return (type === 'codex' ? 'cx-' : 'cc-') + getTmuxSessionNameRef();
+}
+
+function buildClaudeReviewCommand() {
+  return "/review\\n\\n# Use Claude Code agent name " + getPrefixedAgentName('claude') + " before running this review";
+}
+
+function buildWorkCommand(taskListId, taskId, type) {
+  if (type === 'codex') {
+    return "$work --task-list " + taskListId + " --agent " + getPrefixedAgentName('codex') + " --task-id=" + taskId;
+  }
+  return "/work --agent " + getPrefixedAgentName('claude') + " --task-id=" + taskId;
+}
+
+function claimTask(taskListId, taskId, type) {
+  if (claimedTasks.has(taskId)) {
+    claimedTasks.delete(taskId);
+    render();
+    return;
+  }
+  var task = null;
+  for (var i = 0; i < TASK_DATA.length; i++) {
+    for (var j = 0; j < TASK_DATA[i].tasks.length; j++) {
+      if (TASK_DATA[i].tasks[j].id === taskId) { task = TASK_DATA[i].tasks[j]; break; }
+    }
+    if (task) break;
+  }
+  var isReview = task && task.subject.startsWith('REVIEW:');
+  var command = '';
+  if (type === 'codex') {
+    command = isReview
+      ? buildReviewCommand(taskListId, taskId)
+      : buildWorkCommand(taskListId, taskId, 'codex');
+  } else {
+    command = isReview ? buildClaudeReviewCommand() : buildWorkCommand(taskListId, taskId, 'claude');
+  }
+  claimedTasks.set(taskId, { type: type, time: Date.now() });
+  render();
+  navigator.clipboard.writeText(command).then(function() {
+    showToast('Copied!', command);
+  }).catch(function() {
+    showToast('Copy failed. See console (F12)', command);
+  });
+}
+
+function unclaimTask(taskId) {
+  claimedTasks.delete(taskId);
+  render();
+}
+
 function showToast(message, command) {
   const toast = document.getElementById('toast');
   toast.innerHTML = message + '<code>' + escapeHtml(command) + '</code>';
@@ -550,7 +588,7 @@ function getSelectedListId() {
 
 function buildNextAvailableCommand(taskListId) {
   const projectDir = MONITOR_DATA.projectDir;
-  return "cd " + projectDir + " && ./scripts/cda-agent.sh --task-list " + taskListId + " --agent $(tmux display-message -p '#S')";
+  return "cd " + projectDir + " && ./scripts/cda-agent.sh --task-list " + taskListId + " --agent " + getPrefixedAgentName('claude');
 }
 
 function buildSpecificTaskCommand(taskListId, taskId) {
@@ -590,9 +628,8 @@ function launchNextAvailable() {
 }
 
 function buildReviewCommand(taskListId, taskId) {
-  let cmd = "$codex-claude-review name=$(tmux display-message -p '#S') task-list=" + taskListId;
+  let cmd = "$codex-claude-review name=" + getPrefixedAgentName('codex') + " task-list=" + taskListId;
   if (taskId) cmd += ' task-id=' + taskId;
-  cmd += '\\n\\n# If using native codex-app: use a unique agent name and rename your thread to match';
   return cmd;
 }
 
@@ -601,8 +638,8 @@ function launchReview(taskListId, taskId) {
   navigator.clipboard.writeText(command).then(() => {
     incrementCodexCount();
     const msg = taskId
-      ? 'Codex review copied! Paste in a tmux session to start review on task #' + taskId + '. If using codex-app, use a unique agent name and rename your thread to match.'
-      : 'Codex review copied! Paste in a tmux session to start review. If using codex-app, use a unique agent name and rename your thread to match.';
+      ? 'Codex review copied! Paste in a tmux session to start review on task #' + taskId + ' with agent name cx-<tmux-session>.'
+      : 'Codex review copied! Paste in a tmux session to start review with agent name cx-<tmux-session>.';
     showToast(msg, command);
     render();
   }).catch(() => {
@@ -787,67 +824,45 @@ function render() {
   }
   const agentCount = Object.keys(agentMap).length + (unownedInProgress.length > 0 ? 1 : 0);
 
-  const launchDiv = document.getElementById('launch');
+  const headerDiv = document.getElementById('header');
   if (taskLists.length > 0) {
     const currentList = taskLists[0];
-    const nextName = getNextAgentName();
-    let taskListOptions = '';
-    for (const list of MONITOR_DATA.availableLists) {
-      const selected = list.id === currentList.id ? ' selected' : '';
-      const label = list.id + ' (' + list.taskCount + ')';
-      taskListOptions += '<option value="' + escapeHtml(list.id) + '"' + selected + '>' + escapeHtml(label) + '</option>';
+
+    // Build inline agent chips
+    var agentsHtml = '';
+    if (agentCount > 0 || unownedInProgress.length > 0) {
+      agentsHtml = '<div class="header-agents">';
+      for (const [owner, tasks] of Object.entries(agentMap)) {
+        for (const task of tasks) {
+          const subject = task.activeForm || task.subject;
+          agentsHtml += '<span class="agent-chip"><span class="spinner"></span><span class="agent-owner">@' + escapeHtml(owner) + '</span><span class="agent-id">#' + task.id + '</span><span class="agent-task" title="' + escapeHtml(subject) + '">' + escapeHtml(subject) + '</span></span>';
+        }
+      }
+      for (const task of unownedInProgress) {
+        const subject = task.activeForm || task.subject;
+        agentsHtml += '<span class="agent-chip"><span class="spinner"></span><span class="agent-id">#' + task.id + '</span><span class="agent-task" title="' + escapeHtml(subject) + '">' + escapeHtml(subject) + '</span></span>';
+      }
+      agentsHtml += '</div>';
     }
-    const codeMode = getCodeMode();
-    const codeDangerSel = codeMode === 'cda' ? ' selected' : '';
-    const codeRegSel = codeMode === 'claude' ? ' selected' : '';
-    const codexName = getNextCodexName();
-    launchDiv.innerHTML = '<div class="control-bar">' +
-      '<span class="title">Tasks</span><span class="divider"></span>' +
-      '<select id="task-list-select" class="task-list-select" onchange="switchTaskList(this.value)">' + taskListOptions + '</select>' +
-      '<select class="code-mode-select" onchange="setCodeMode(this.value)">' +
-        '<option value="cda"' + codeDangerSel + '>Danger</option>' +
-        '<option value="claude"' + codeRegSel + '>Reg</option>' +
-      '</select>' +
-      '<button class="launch-btn" onclick="launchNextAvailable()">Code</button>' +
-      '<span class="agent-name">' + nextName + '</span>' +
-      '<button class="reset-btn" onclick="resetAgentCount()">reset</button>' +
+
+    headerDiv.innerHTML = '<div class="control-bar">' +
+      '<span class="list-name" title="' + escapeHtml(currentList.id) + '">' + escapeHtml(currentList.id) + '</span>' +
+      '<button class="copy-id-btn" onclick="copyTaskListId()" title="Copy task list ID">\\u2398</button>' +
       '<span class="divider"></span>' +
-      '<button class="review-btn" onclick="launchNextReview()">Review</button>' +
-      '<span class="codex-name">' + codexName + '</span>' +
-      '<button class="reset-btn" onclick="resetCodexCount()">reset</button>' +
-      '<span class="spacer"></span>' +
       '<div class="stats"><span><span class="value available">' + available + '</span> avail</span><span><span class="value in-progress">' + inProgress + '</span> active</span><span><span class="value done">' + completed + '</span>/' + totalTasks + ' done</span></div>' +
-      '<span class="divider"></span><button class="settings-btn" onclick="openSettings()">Settings</button>' +
+      '<span class="spacer"></span>' +
+      agentsHtml +
+      '<button class="settings-btn" onclick="openSettings()">Settings</button>' +
     '</div>';
   } else {
-    launchDiv.innerHTML = '<div class="control-bar"><span class="title">Tasks</span><span class="spacer"></span><button class="settings-btn" onclick="openSettings()">Settings</button></div>';
-  }
-
-  const agentsDiv = document.getElementById('agents');
-  if (agentCount > 0 || unownedInProgress.length > 0) {
-    let agentsHtml = '<div class="agents-bar"><span class="label">Working</span>';
-    for (const [owner, tasks] of Object.entries(agentMap)) {
-      for (const task of tasks) {
-        const subject = task.activeForm || task.subject;
-        agentsHtml += '<div class="agent"><span class="spinner"></span><span class="agent-owner">@' + escapeHtml(owner) + '</span><span class="agent-id">#' + task.id + '</span><span class="agent-task" title="' + escapeHtml(subject) + '">' + escapeHtml(subject) + '</span></div>';
-      }
-    }
-    for (const task of unownedInProgress) {
-      const subject = task.activeForm || task.subject;
-      agentsHtml += '<div class="agent"><span class="spinner"></span><span class="agent-id">#' + task.id + '</span><span class="agent-task" title="' + escapeHtml(subject) + '">' + escapeHtml(subject) + '</span></div>';
-    }
-    agentsHtml += '</div>';
-    agentsDiv.innerHTML = agentsHtml;
-  } else {
-    agentsDiv.innerHTML = '';
+    headerDiv.innerHTML = '<div class="control-bar"><span class="list-name">No task lists</span><span class="spacer"></span><button class="settings-btn" onclick="openSettings()">Settings</button></div>';
   }
 
   const content = document.getElementById('content');
   if (taskLists.length === 0) {
-    agentsDiv.innerHTML = '';
     const projectDir = MONITOR_DATA.projectDir || '';
     const cdPrefix = projectDir ? 'cd ' + escapeHtml(projectDir) + ' && ' : '';
-    content.innerHTML = '<div class="empty">No active task lists found.<code>' + cdPrefix + "./scripts/cda-agent.sh --task-list my-project --agent $(tmux display-message -p '#S')" + '</code></div>';
+    content.innerHTML = '<div class="empty">No active task lists found.<code>' + cdPrefix + "./scripts/cda-agent.sh --task-list my-project --agent cc-$(tmux display-message -p '#S')" + '</code></div>';
     document.getElementById('commands').innerHTML = '';
     return;
   }
@@ -860,11 +875,6 @@ function render() {
     const lastModified = new Date(taskList.lastModified).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
 
     html += '<div class="task-list"><div class="task-list-header"><h2 title="' + escapeHtml(taskList.id) + '">' + escapeHtml(taskList.id) + '</h2><span class="meta">(' + taskList.tasks.length + ' tasks, updated ' + lastModified + ')</span></div>';
-    const statusParts = [];
-    if (inProgressCount > 0) statusParts.push('<span class="active">' + inProgressCount + ' active</span>');
-    if (pendingCount > 0) statusParts.push('<span class="pending">' + pendingCount + ' pending</span>');
-    if (completedCount > 0) statusParts.push('<span class="done">' + completedCount + ' done</span>');
-    if (statusParts.length > 0) html += '<div class="status-summary">[' + statusParts.join(', ') + ']</div>';
 
     for (const task of taskList.tasks) {
       const blockerStatus = getBlockerStatus(task, taskList.tasks);
@@ -878,16 +888,21 @@ function render() {
         suffixParts.push('<span class="blocked">waiting on ' + blockerIds + '</span>');
       }
       const canLaunch = isAvailable;
-      const isReviewTask = task.subject.startsWith('REVIEW:');
-      const taskClass = isAvailable ? 'task pending available'
+      const claimed = claimedTasks.get(task.id);
+      const claimedClass = claimed ? ' claimed' : '';
+      const taskClass = (isAvailable ? 'task pending available'
         : blockerStatus.isBlocked ? 'task pending blocked'
-        : 'task ' + task.status;
+        : 'task ' + task.status) + claimedClass;
       let availableLabel = '';
       if (canLaunch) {
-        if (isReviewTask) {
-          availableLabel = '<span class="available-label" onclick="event.stopPropagation(); launchReview(\\'' + taskList.id + '\\', \\'' + task.id + '\\')">available</span>';
+        if (claimed) {
+          const claimLabel = claimed.type === 'codex' ? 'codex' : 'claude code';
+          const elapsed = Math.floor((Date.now() - claimed.time) / 1000);
+          const timer = elapsed < 60 ? elapsed + 's' : Math.floor(elapsed / 60) + 'm ' + (elapsed % 60) + 's';
+          availableLabel = '<span class="claimed-label" onclick="event.stopPropagation(); unclaimTask(\\'' + task.id + '\\')">copied (' + claimLabel + ') ' + timer + '</span>';
         } else {
-          availableLabel = '<span class="available-label" onclick="event.stopPropagation(); launchSpecificTask(\\'' + taskList.id + '\\', \\'' + task.id + '\\')">available</span>';
+          availableLabel = '<span class="copy-btn copy-claude" onclick="event.stopPropagation(); claimTask(\\'' + taskList.id + '\\', \\'' + task.id + '\\', \\'claude\\')">Claude Code</span>' +
+            '<span class="copy-btn copy-codex" onclick="event.stopPropagation(); claimTask(\\'' + taskList.id + '\\', \\'' + task.id + '\\', \\'codex\\')">Codex</span>';
         }
       }
       const isExp = expandedTasks.has(task.id);
@@ -906,11 +921,11 @@ function render() {
   const mostRecent = taskLists[0];
   const projectDir = MONITOR_DATA.projectDir || '';
   const cdPrefix = projectDir ? 'cd ' + escapeHtml(projectDir) + ' && ' : '';
-  let cmdHtml = '<h3>Quick Commands:</h3><div class="label"># Resume most recent task list:</div><code>' + cdPrefix + "./scripts/cda-agent.sh --task-list " + escapeHtml(mostRecent.id) + " --agent $(tmux display-message -p '#S')" + '</code>';
+  let cmdHtml = '<h3>Quick Commands:</h3><div class="label"># Resume most recent task list:</div><code>' + cdPrefix + "./scripts/cda-agent.sh --task-list " + escapeHtml(mostRecent.id) + " --agent cc-$(tmux display-message -p '#S')" + '</code>';
   if (taskLists.length > 1) {
     cmdHtml += '<div class="label"># Other task lists:</div>';
     for (const list of taskLists.slice(1, 4)) {
-      cmdHtml += '<code class="dim">' + cdPrefix + "./scripts/cda-agent.sh --task-list " + escapeHtml(list.id) + " --agent $(tmux display-message -p '#S')" + '</code>';
+      cmdHtml += '<code class="dim">' + cdPrefix + "./scripts/cda-agent.sh --task-list " + escapeHtml(list.id) + " --agent cc-$(tmux display-message -p '#S')" + '</code>';
     }
   }
   commands.innerHTML = cmdHtml;
@@ -1104,8 +1119,7 @@ function writeFiles() {
   <style>${CSS}</style>
 </head>
 <body>
-  <div id="launch"></div>
-  <div id="agents"></div>
+  <div id="header"></div>
   <div id="content"></div>
   <div id="toast" class="toast"></div>
   <div class="commands" id="commands"></div>

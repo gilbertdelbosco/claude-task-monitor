@@ -34,7 +34,7 @@ Open http://localhost:8080/ in your browser to see the dashboard.
 The monitor copies launch commands that target the standardized app scripts:
 
 ```bash
-npm run agents:run -- --task-list <task-list-id> --agent <agent-name>
+npm run agents:run -- --task-list <task-list-id> --agent cc-<tmux-session-name>
 ```
 
 For specific-task launch buttons, it appends:
@@ -42,6 +42,8 @@ For specific-task launch buttons, it appends:
 ```bash
 --mode task-<id>
 ```
+
+Claude Code copied launches use `cc-<current-tmux-session>` and Codex copied launches use `cx-<current-tmux-session>` so task ownership shows which model handled the work.
 
 This aligns monitor output with the `agent-platform` command surface.
 
@@ -51,7 +53,7 @@ This aligns monitor output with the `agent-platform` command surface.
 - **Real-time updates** - Polls for changes every 2 seconds (configurable)
 - **Auto-archive** - Archives completed task lists to `~/.claude/tasks/.archive/`
 - **One-click launch** - Copy agent launch commands to clipboard
-- **Agent naming** - Uses Greek alphabet for agent names (alpha, beta, gamma...)
+- **Agent naming** - Auto-prefixes tmux session names as `cc-...` for Claude Code and `cx-...` for Codex
 - **Task dependencies** - Shows blocked tasks and their blockers
 - **Settings panel** - Configure project directory, poll interval, and agent names from the dashboard
 - **Claude Code skill** - Built-in `/task-monitor` skill for diagnosing and repairing the monitor
